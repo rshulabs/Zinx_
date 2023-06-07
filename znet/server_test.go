@@ -14,7 +14,7 @@ func Client() {
 		return
 	}
 	for {
-		_, err := conn.Write([]byte("hello i am client"))
+		_, err := conn.Write([]byte("hello Zinx"))
 		if err != nil {
 			fmt.Println("client send data err:", err)
 			return
@@ -25,7 +25,7 @@ func Client() {
 			fmt.Println("client recv data err:", err)
 			return
 		}
-		fmt.Printf("server call back : %s,cnt : %d\n", buf, cnt)
+		fmt.Printf("server call back : %s, cnt : %d\n", buf, cnt)
 		time.Sleep(time.Second)
 	}
 }
