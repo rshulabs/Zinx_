@@ -1,0 +1,45 @@
+package UML
+@startuml
+interface IServer {
+    Start()
+    Stop()
+    Serev()
+}
+interface IConnetcion {
+    Start()
+    Stop()
+    GetTcpConnection() *net.TCPConn
+    GetConnID() uint32
+    GetRemoteAddr() net.Addr
+}
+class Connection {
+    Conn *net.TCPConn
+    ConnID uint32
+    isClosed bool
+    handleAPI ziface.HandFunc
+    ExistBuffChan chan bool
+
+    StartReader()
+    Start()
+    Stop()
+    getTCPConnection() *net.TCPConn
+    getConnID() uint32
+    getRemoteAddr() net.Addr
+}
+Connection ..|> IConnetcion : 实现
+
+class Server {
+    Name      string
+    IPVersion string
+    IP        string
+    Port      int
+
+    Start()
+    Stop()
+    Serve()
+}
+
+Server ..|> IServer : 实现
+
+title 仿Zinx_架构设计
+@enduml

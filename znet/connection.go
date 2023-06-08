@@ -14,16 +14,20 @@ type Connection struct {
 	// 当前连接关闭状态
 	isClosed bool
 	// 处理api
-	handleAPI ziface.HandFunc
+	//handleAPI ziface.HandFunc
+
+	// 处理router
+	Router ziface.IRouter
 	// 告知该连接已经退出的channel
 	ExistBuffChan chan bool
 }
 
-func NewConnection(conn *net.TCPConn, id uint32, callback ziface.HandFunc) *Connection {
+func NewConnection(conn *net.TCPConn, id uint32, router ziface.IRouter) *Connection {
 	return &Connection{
-		Conn:          conn,
-		ConnID:        id,
-		handleAPI:     callback,
+		Conn:   conn,
+		ConnID: id,
+		//handleAPI:     callback,
+		Router:        router,
 		isClosed:      false,
 		ExistBuffChan: make(chan bool, 1),
 	}
@@ -31,21 +35,25 @@ func NewConnection(conn *net.TCPConn, id uint32, callback ziface.HandFunc) *Conn
 
 func (c *Connection) StartReader() {
 	fmt.Println("Reader Goroutinue is running")
-	defer fmt.Println(c.getRemoteAddr().String(), " conn reader exit!")
+	defer fmt.Println(c.GetRemoteAddr().String(), " conn reader exit!")
 	defer c.Stop()
 	for {
 		buf := make([]byte, 512)
-		cnt, err := c.Conn.Read(buf)
+		_, err := c.Conn.Read(buf)
 		if err != nil {
 			fmt.Println("recv buf err:", err)
 			c.ExistBuffChan <- true
 			continue
 		}
-		if err := c.handleAPI(c.Conn, buf, cnt); err != nil {
-			fmt.Println("connID", c.ConnID, " handle err", err)
-			c.ExistBuffChan <- true
-			return
+		req := Request{
+			conn: c,
+			data: buf,
 		}
+		go func(req ziface.IRequest) {
+			c.Router.PreHandle(req)
+			c.Router.Handle(req)
+			c.Router.PostHandle(req)
+		}(&req)
 	}
 }
 
@@ -69,14 +77,14 @@ func (c *Connection) Stop() {
 	close(c.ExistBuffChan)
 }
 
-func (c *Connection) getTCPConnection() *net.TCPConn {
+func (c *Connection) GetTcpConnection() *net.TCPConn {
 	return c.Conn
 }
 
-func (c *Connection) getConnID() uint32 {
+func (c *Connection) GetConnID() uint32 {
 	return c.ConnID
 }
 
-func (c *Connection) getRemoteAddr() net.Addr {
+func (c *Connection) GetRemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
