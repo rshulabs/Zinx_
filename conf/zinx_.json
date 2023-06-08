@@ -1,0 +1,6 @@
+{
+  "name": "demo server",
+  "host": "127.0.0.1",
+  "tcp_port": 7777,
+  "max_conn": 3
+}

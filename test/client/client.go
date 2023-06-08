@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/rshulabs/Zinx_/znet"
+	"io"
 	"net"
 	"time"
 )
@@ -13,18 +15,34 @@ func main() {
 		return
 	}
 	for {
-		_, err := conn.Write([]byte("hello Zinx"))
+		dp := znet.NewDataPack()
+		msg, _ := dp.Pack(znet.NewMsgPackage(0, []byte("zinx_ v0.4")))
+		_, err := conn.Write(msg)
 		if err != nil {
 			fmt.Println("client send data err:", err)
 			return
 		}
-		buf := make([]byte, 512)
-		cnt, err := conn.Read(buf)
+		headData := make([]byte, dp.GetHeadLen())
+		_, err = io.ReadFull(conn, headData)
 		if err != nil {
 			fmt.Println("client recv data err:", err)
+			break
+		}
+		msgHead, err := dp.Unpack(headData)
+		if err != nil {
+			fmt.Println("server unpack err:", err)
 			return
 		}
-		fmt.Printf("server call back : %s, cnt : %d\n", buf, cnt)
+		if msgHead.GetDataLen() > 0 {
+			msg := msgHead.(*znet.Message)
+			msg.Data = make([]byte, msg.GetDataLen())
+			_, err := io.ReadFull(conn, msg.Data)
+			if err != nil {
+				fmt.Println("server unpack data err:", err)
+				return
+			}
+			fmt.Println("recv msg: id = ", msg.Id, " len = ", msg.DataLen, " data = ", string(msg.Data))
+		}
 		time.Sleep(time.Second)
 	}
 }
