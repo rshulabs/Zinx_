@@ -16,7 +16,7 @@ func main() {
 	}
 	for {
 		dp := znet.NewDataPack()
-		msg, _ := dp.Pack(znet.NewMsgPackage(0, []byte("zinx_ v0.5 client0")))
+		msg, _ := dp.Pack(znet.NewMsgPackage(1, []byte("zinx_ v0.5 client1")))
 		_, err := conn.Write(msg)
 		if err != nil {
 			fmt.Println("client send data err:", err)

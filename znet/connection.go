@@ -19,17 +19,16 @@ type Connection struct {
 	//handleAPI ziface.HandFunc
 
 	// 处理router
-	Router ziface.IRouter
+	MsgHandler ziface.IMsgHandle
 	// 告知该连接已经退出的channel
 	ExistBuffChan chan bool
 }
 
-func NewConnection(conn *net.TCPConn, id uint32, router ziface.IRouter) *Connection {
+func NewConnection(conn *net.TCPConn, id uint32, msgHandler ziface.IMsgHandle) *Connection {
 	return &Connection{
-		Conn:   conn,
-		ConnID: id,
-		//handleAPI:     callback,
-		Router:        router,
+		Conn:          conn,
+		ConnID:        id,
+		MsgHandler:    msgHandler,
 		isClosed:      false,
 		ExistBuffChan: make(chan bool, 1),
 	}
@@ -43,12 +42,14 @@ func (c *Connection) StartReader() {
 		dp := NewDataPack()
 		headData := make([]byte, dp.GetHeadLen())
 		_, err := io.ReadFull(c.GetTcpConnection(), headData)
+		//fmt.Println("head : ", headData)
 		if err != nil {
 			fmt.Println("recv msg len err:", err)
 			c.ExistBuffChan <- true
 			continue
 		}
 		msg, err := dp.Unpack(headData)
+		//fmt.Println("msg ", msg)
 		if err != nil {
 			fmt.Println("unpack err:", err)
 			c.ExistBuffChan <- true
@@ -68,11 +69,7 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-		go func(req ziface.IRequest) {
-			c.Router.PreHandle(req)
-			c.Router.Handle(req)
-			c.Router.PostHandle(req)
-		}(&req)
+		go c.MsgHandler.DoMsgHandler(&req)
 	}
 }
 

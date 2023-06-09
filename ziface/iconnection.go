@@ -11,11 +11,11 @@ type IConnection interface {
 	GetTcpConnection() *net.TCPConn
 	// GetConnID 获取当前连接id
 	GetConnID() uint32
-	// GetRemoteAddr 过去客户端地址
+	// GetRemoteAddr 获取客户端地址
 	GetRemoteAddr() net.Addr
 
 	SendMsg(msgId uint32, data []byte) error
 }
 
 // HandFunc 定义一个统一处理业务接口
-type HandFunc func(*net.TCPConn, []byte, int) error
+//type HandFunc func(*net.TCPConn, []byte, int) error

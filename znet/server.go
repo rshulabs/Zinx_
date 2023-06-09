@@ -14,9 +14,20 @@ type Server struct {
 	Port      int
 
 	// 由用户绑定回调router
-	Router ziface.IRouter
+	msgHandler ziface.IMsgHandle
 }
 
+func NewServer() ziface.IServer {
+	utils.GlobalObject.Reload()
+	s := &Server{
+		Name:       utils.GlobalObject.Name,
+		IPVersion:  "tcp4",
+		IP:         utils.GlobalObject.Host,
+		Port:       utils.GlobalObject.TcpPort,
+		msgHandler: NewMsgHandle(),
+	}
+	return s
+}
 func (s *Server) Start() {
 	fmt.Printf("[START] Server listener at IP : %s,Port : %d\n", s.IP, s.Port)
 	fmt.Printf("[ZINX_] version: %s, maxconn: %d, macpacketsize: %d\n", utils.GlobalObject.Version, utils.GlobalObject.MaxConn, utils.GlobalObject.MaxPacketSize)
@@ -43,7 +54,7 @@ func (s *Server) Start() {
 			// TODO
 
 			// TODO
-			dealConn := NewConnection(conn, cid, s.Router)
+			dealConn := NewConnection(conn, cid, s.msgHandler)
 			cid++
 			go dealConn.Start()
 		}
@@ -59,18 +70,7 @@ func (s *Server) Serve() {
 	s.Start()
 	select {}
 }
-func (s *Server) AddRouter(router ziface.IRouter) {
-	s.Router = router
+func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
+	s.msgHandler.AddRouter(msgId, router)
 	fmt.Println("add router success")
-}
-
-func NewServer(name string) *Server {
-	s := &Server{
-		Name:      utils.GlobalObject.Name,
-		IPVersion: "tcp4",
-		IP:        utils.GlobalObject.Host,
-		Port:      utils.GlobalObject.TcpPort,
-		Router:    nil,
-	}
-	return s
 }
