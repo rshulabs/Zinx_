@@ -32,6 +32,7 @@ func (s *Server) Start() {
 	fmt.Printf("[START] Server listener at IP : %s,Port : %d\n", s.IP, s.Port)
 	fmt.Printf("[ZINX_] version: %s, maxconn: %d, macpacketsize: %d\n", utils.GlobalObject.Version, utils.GlobalObject.MaxConn, utils.GlobalObject.MaxPacketSize)
 	go func() {
+		s.msgHandler.StartWorkerPool()
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			fmt.Println("resolve tcpaddr err:", err)

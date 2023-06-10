@@ -3,6 +3,7 @@ package znet
 import (
 	"errors"
 	"fmt"
+	"github.com/rshulabs/Zinx_/utils"
 	"github.com/rshulabs/Zinx_/ziface"
 	"io"
 	"net"
@@ -73,7 +74,11 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-		go c.MsgHandler.DoMsgHandler(&req)
+		if utils.GlobalObject.MaxPacketSize > 0 {
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 	}
 }
 
