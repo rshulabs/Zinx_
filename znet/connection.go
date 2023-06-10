@@ -10,6 +10,7 @@ import (
 )
 
 type Connection struct {
+	TcpServer ziface.IServer
 	// 当前连接socket
 	Conn *net.TCPConn
 	// 当前连接id
@@ -19,24 +20,30 @@ type Connection struct {
 	// 处理api
 	//handleAPI ziface.HandFunc
 
-	// 处理router
+	// 处理消息
 	MsgHandler ziface.IMsgHandle
 	// 告知该连接已经退出的channel
 	ExistBuffChan chan bool
 
 	// 读写goroutinue通信
 	msgChan chan []byte
+	// 读写goroutinue通信 有缓冲
+	msgBuffChan chan []byte
 }
 
-func NewConnection(conn *net.TCPConn, id uint32, msgHandler ziface.IMsgHandle) *Connection {
-	return &Connection{
+func NewConnection(server ziface.IServer, conn *net.TCPConn, id uint32, msgHandler ziface.IMsgHandle) *Connection {
+	c := &Connection{
+		TcpServer:     server,
 		Conn:          conn,
 		ConnID:        id,
 		MsgHandler:    msgHandler,
 		isClosed:      false,
 		ExistBuffChan: make(chan bool, 1),
 		msgChan:       make(chan []byte),
+		msgBuffChan:   make(chan []byte, utils.GlobalObject.MaxWorkerTaskLen),
 	}
+	c.TcpServer.GetConnMgr().Add(c)
+	return c
 }
 
 func (c *Connection) StartReader() {
@@ -85,12 +92,7 @@ func (c *Connection) StartReader() {
 func (c *Connection) Start() {
 	go c.StartReader()
 	go c.StartWriter()
-	for {
-		select {
-		case <-c.ExistBuffChan:
-			return
-		}
-	}
+	c.TcpServer.CallOnConnStart(c)
 }
 
 func (c *Connection) Stop() {
@@ -98,8 +100,11 @@ func (c *Connection) Stop() {
 		return
 	}
 	c.isClosed = true
+	c.TcpServer.CallOnConnStop(c)
 	c.Conn.Close()
 	c.ExistBuffChan <- true
+	c.TcpServer.GetConnMgr().Remove(c)
+	close(c.msgBuffChan)
 	close(c.ExistBuffChan)
 }
 
@@ -139,9 +144,33 @@ func (c *Connection) StartWriter() {
 				fmt.Println("send data err: ", err, "conn writer exit")
 				return
 			}
+		case data, ok := <-c.msgBuffChan:
+			if ok {
+				if _, err := c.Conn.Write(data); err != nil {
+					fmt.Println("send buff data err: ", err)
+					return
+				}
+			} else {
+				fmt.Println("msgbuff is closed")
+				break
+			}
 		case <-c.ExistBuffChan:
 			return
 
 		}
 	}
+}
+
+func (c *Connection) SendBuffMsg(msgId uint32, data []byte) error {
+	if c.isClosed == true {
+		return errors.New("conn closed when send buf msg")
+	}
+	dp := NewDataPack()
+	msg, err := dp.Pack(NewMsgPackage(msgId, data))
+	if err != nil {
+		fmt.Println("pack err msg id = ", msgId)
+		return errors.New("pack err msg")
+	}
+	c.msgBuffChan <- msg
+	return nil
 }

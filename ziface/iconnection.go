@@ -15,6 +15,7 @@ type IConnection interface {
 	GetRemoteAddr() net.Addr
 
 	SendMsg(msgId uint32, data []byte) error
+	SendBuffMsg(msgId uint32, data []byte) error
 }
 
 // HandFunc 定义一个统一处理业务接口

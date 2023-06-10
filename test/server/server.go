@@ -31,8 +31,21 @@ func (r *HelloRouter) Handle(req ziface.IRequest) {
 		fmt.Println("call hellohandle err:", err)
 	}
 }
+
+func DoBegin(conn ziface.IConnection) {
+	fmt.Println("do begin...")
+	err := conn.SendMsg(2, []byte("do something at begin ...."))
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+func DoEnd(conn ziface.IConnection) {
+	fmt.Println("do something at end...")
+}
 func main() {
 	s := znet.NewServer()
+	s.SetOnConnStart(DoBegin)
+	s.SetOnConnStop(DoEnd)
 	s.AddRouter(0, &PingRouter{})
 	s.AddRouter(1, &HelloRouter{})
 	s.Serve()
