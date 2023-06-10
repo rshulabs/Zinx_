@@ -34,12 +34,20 @@ func (r *HelloRouter) Handle(req ziface.IRequest) {
 
 func DoBegin(conn ziface.IConnection) {
 	fmt.Println("do begin...")
+	conn.SetProperty("name", "rshulabs")
+	conn.SetProperty("host", "https://github.com/rshulabs")
 	err := conn.SendMsg(2, []byte("do something at begin ...."))
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 func DoEnd(conn ziface.IConnection) {
+	if name, err := conn.GetProperty("name"); err == nil {
+		fmt.Println("property name = ", name)
+	}
+	if host, err := conn.GetProperty("host"); err == nil {
+		fmt.Println("property host = ", host)
+	}
 	fmt.Println("do something at end...")
 }
 func main() {

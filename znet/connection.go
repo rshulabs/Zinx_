@@ -7,6 +7,7 @@ import (
 	"github.com/rshulabs/Zinx_/ziface"
 	"io"
 	"net"
+	"sync"
 )
 
 type Connection struct {
@@ -29,6 +30,10 @@ type Connection struct {
 	msgChan chan []byte
 	// 读写goroutinue通信 有缓冲
 	msgBuffChan chan []byte
+
+	// 属性
+	property     map[string]interface{}
+	propertyLock sync.RWMutex
 }
 
 func NewConnection(server ziface.IServer, conn *net.TCPConn, id uint32, msgHandler ziface.IMsgHandle) *Connection {
@@ -41,6 +46,7 @@ func NewConnection(server ziface.IServer, conn *net.TCPConn, id uint32, msgHandl
 		ExistBuffChan: make(chan bool, 1),
 		msgChan:       make(chan []byte),
 		msgBuffChan:   make(chan []byte, utils.GlobalObject.MaxWorkerTaskLen),
+		property:      make(map[string]interface{}),
 	}
 	c.TcpServer.GetConnMgr().Add(c)
 	return c
@@ -104,8 +110,8 @@ func (c *Connection) Stop() {
 	c.Conn.Close()
 	c.ExistBuffChan <- true
 	c.TcpServer.GetConnMgr().Remove(c)
-	close(c.msgBuffChan)
 	close(c.ExistBuffChan)
+	close(c.msgBuffChan)
 }
 
 func (c *Connection) GetTcpConnection() *net.TCPConn {
@@ -173,4 +179,26 @@ func (c *Connection) SendBuffMsg(msgId uint32, data []byte) error {
 	}
 	c.msgBuffChan <- msg
 	return nil
+}
+
+func (c *Connection) SetProperty(key string, val interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	c.property[key] = val
+}
+
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+	if val, ok := c.property[key]; ok {
+		return val, nil
+	} else {
+		return nil, errors.New("no property found")
+	}
+}
+
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	delete(c.property, key)
 }

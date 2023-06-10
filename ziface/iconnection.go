@@ -16,6 +16,11 @@ type IConnection interface {
 
 	SendMsg(msgId uint32, data []byte) error
 	SendBuffMsg(msgId uint32, data []byte) error
+
+	// 连接属性
+	SetProperty(key string, val interface{})
+	GetProperty(key string) (interface{}, error)
+	RemoveProperty(key string)
 }
 
 // HandFunc 定义一个统一处理业务接口
