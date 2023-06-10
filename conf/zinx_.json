@@ -1,6 +1,7 @@
 {
-  "name": "[Zinx_v0.5]",
+  "name": "[Zinx_v0.6]",
   "host": "127.0.0.1",
   "tcp_port": 7777,
-  "max_conn": 3
+  "max_conn": 3,
+  "version": "v0.6"
 }
