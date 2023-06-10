@@ -64,7 +64,7 @@ func (c *Connection) StartReader() {
 		if err != nil {
 			fmt.Println("recv msg len err:", err)
 			c.ExistBuffChan <- true
-			continue
+			return
 		}
 		msg, err := dp.Unpack(headData)
 		//fmt.Println("msg ", msg)
